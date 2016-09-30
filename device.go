@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
-	"github.com/zach-klippenstein/goadb/wire"
+	"github.com/openatx/go-adb/internal/errors"
+	"github.com/openatx/go-adb/wire"
 )
 
 // MtimeOfClose should be passed to OpenWrite to set the file modification time to the time the Close
@@ -93,16 +93,28 @@ This method quotes the arguments for you, and will return an error if any of the
 contain double quotes.
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
-	cmd, err := prepareCommandLine(cmd, args...)
+	conn, err := c.Command(cmd, args...)
 	if err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
+		return "", err
 	}
+	resp, err := conn.ReadUntilEof()
+	return string(resp), wrapClientError(err, c, "RunCommand")
+}
 
-	conn, err := c.dialDevice()
+func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error) {
+	cmd, err = prepareCommandLine(cmd, args...)
 	if err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
+		return nil, wrapClientError(err, c, "RunCommand")
 	}
-	defer conn.Close()
+	conn, err = c.dialDevice()
+	if err != nil {
+		return nil, wrapClientError(err, c, "RunCommand")
+	}
+	defer func() {
+		if err != nil {
+			conn.Close()
+		}
+	}()
 
 	req := fmt.Sprintf("shell:%s", cmd)
 
@@ -110,14 +122,12 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	// We read until the stream is closed.
 	// So, we can't use conn.RoundTripSingleResponse.
 	if err = conn.SendMessage([]byte(req)); err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
+		return nil, wrapClientError(err, c, "Command")
 	}
 	if _, err = conn.ReadStatus(req); err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
+		return nil, wrapClientError(err, c, "Command")
 	}
-
-	resp, err := conn.ReadUntilEof()
-	return string(resp), wrapClientError(err, c, "RunCommand")
+	return conn, nil
 }
 
 /*

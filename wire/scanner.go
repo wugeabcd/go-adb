@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/openatx/go-adb/internal/errors"
 )
 
 // TODO(zach): All EOF errors returned from networoking calls should use ConnectionResetError.
@@ -39,6 +39,7 @@ See Conn for more details.
 type Scanner interface {
 	io.Closer
 	StatusReader
+	Read([]byte) (int, error)
 	ReadMessage() ([]byte, error)
 	ReadUntilEof() ([]byte, error)
 
@@ -75,6 +76,11 @@ func (s *realScanner) ReadUntilEof() ([]byte, error) {
 		return nil, errors.WrapErrorf(err, errors.NetworkError, "error reading until EOF")
 	}
 	return data, nil
+}
+
+// wrap for shell
+func (s *realScanner) Read(p []byte) (n int, err error) {
+	return s.reader.Read(p)
 }
 
 func (s *realScanner) NewSyncScanner() SyncScanner {

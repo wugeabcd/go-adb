@@ -4,8 +4,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
-	"github.com/zach-klippenstein/goadb/wire"
+	"github.com/openatx/go-adb/internal/errors"
+	"github.com/openatx/go-adb/wire"
 )
 
 // MockServer implements Server, Scanner, and Sender.
@@ -49,6 +49,19 @@ func (s *MockServer) ReadStatus(req string) (string, error) {
 		return "", err
 	}
 	return s.Status, nil
+}
+
+func (s *MockServer) Read(p []byte) (int, error) {
+	s.logMethod("Read")
+	if err := s.getNextErrToReturn(); err != nil {
+		return 0, err
+	}
+	if s.nextMsgIndex >= len(s.Messages) {
+		return 0, errors.WrapErrorf(io.EOF, errors.NetworkError, "")
+	}
+
+	s.nextMsgIndex++
+	return len(p), nil
 }
 
 func (s *MockServer) ReadMessage() ([]byte, error) {
