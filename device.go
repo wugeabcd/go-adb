@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -128,6 +129,22 @@ func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error
 		return nil, wrapClientError(err, c, "Command")
 	}
 	return conn, nil
+}
+
+func (c *Device) Properties() (props map[string]string, err error) {
+	propOutput, err := c.RunCommand("getprop")
+	if err != nil {
+		return nil, err
+	}
+	re := regexp.MustCompile(`\[(.*?)\]:\s*\[(.*?)\]`)
+	matches := re.FindAllStringSubmatch(propOutput, -1)
+	props = make(map[string]string)
+	for _, m := range matches {
+		var key = m[1]
+		var val = m[2]
+		props[key] = val
+	}
+	return
 }
 
 /*
