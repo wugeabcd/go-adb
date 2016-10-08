@@ -76,6 +76,19 @@ func TestRunCommandNoArgs(t *testing.T) {
 	assert.Equal(t, "output", v)
 }
 
+func TestProperties(t *testing.T) {
+	s := &MockServer{
+		Status:   wire.StatusSuccess,
+		Messages: []string{"[wifi.interface]: [wlan0]\r\n[wlan.driver.ath]: [0]\r\n"},
+	}
+	client := (&Adb{s}).Device(AnyDevice())
+	props, err := client.Properties()
+	assert.NoError(t, err)
+	assert.Equal(t, len(props), 2)
+	assert.Equal(t, props["wifi.interface"], "wlan0")
+	assert.Equal(t, props["wlan.driver.ath"], "0")
+}
+
 func TestPrepareCommandLineNoArgs(t *testing.T) {
 	result, err := prepareCommandLine("cmd")
 	assert.NoError(t, err)

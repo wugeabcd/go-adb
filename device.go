@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -104,15 +105,10 @@ contain double quotes.
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	exArgs := append(args, ";", "echo", ":$?")
-	conn, err := c.Command(cmd, exArgs...)
+	outStr, err := c.commandOutput(cmd, exArgs...)
 	if err != nil {
-		return "", err
+		return outStr, err
 	}
-	resp, err := conn.ReadUntilEof()
-	if err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
-	}
-	outStr := string(resp)
 	idx := strings.LastIndexByte(outStr, ':')
 	if idx == -1 {
 		return outStr, fmt.Errorf("adb shell error, parse exit code failed")
@@ -122,6 +118,18 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 		err = ShellExitError{strings.Join(args, " "), exitCode}
 	}
 	return outStr[0:idx], err
+}
+
+func (c *Device) commandOutput(cmd string, args ...string) (string, error) {
+	conn, err := c.Command(cmd, args...)
+	if err != nil {
+		return "", err
+	}
+	resp, err := conn.ReadUntilEof()
+	if err != nil {
+		return "", wrapClientError(err, c, "RunCommand")
+	}
+	return string(resp), nil
 }
 
 func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error) {
@@ -151,6 +159,22 @@ func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error
 		return nil, wrapClientError(err, c, "Command")
 	}
 	return conn, nil
+}
+
+func (c *Device) Properties() (props map[string]string, err error) {
+	propOutput, err := c.commandOutput("getprop")
+	if err != nil {
+		return nil, err
+	}
+	re := regexp.MustCompile(`\[(.*?)\]:\s*\[(.*?)\]`)
+	matches := re.FindAllStringSubmatch(propOutput, -1)
+	props = make(map[string]string)
+	for _, m := range matches {
+		var key = m[1]
+		var val = m[2]
+		props[key] = val
+	}
+	return
 }
 
 /*
