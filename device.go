@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,6 +77,15 @@ func (c *Device) DeviceInfo() (*DeviceInfo, error) {
 	return nil, wrapClientError(err, c, "DeviceInfo")
 }
 
+type ShellExitError struct {
+	Command  string
+	ExitCode int
+}
+
+func (s ShellExitError) Error() string {
+	return fmt.Sprintf("shell %s exit code %d", s.Command, s.ExitCode)
+}
+
 /*
 RunCommand runs the specified commands on a shell on the device.
 
@@ -93,12 +103,25 @@ This method quotes the arguments for you, and will return an error if any of the
 contain double quotes.
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
-	conn, err := c.Command(cmd, args...)
+	exArgs := append(args, ";", "echo", ":$?")
+	conn, err := c.Command(cmd, exArgs...)
 	if err != nil {
 		return "", err
 	}
 	resp, err := conn.ReadUntilEof()
-	return string(resp), wrapClientError(err, c, "RunCommand")
+	if err != nil {
+		return "", wrapClientError(err, c, "RunCommand")
+	}
+	outStr := string(resp)
+	idx := strings.LastIndexByte(outStr, ':')
+	if idx == -1 {
+		return outStr, fmt.Errorf("adb shell error, parse exit code failed")
+	}
+	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
+	if exitCode != 0 {
+		err = ShellExitError{strings.Join(args, " "), exitCode}
+	}
+	return outStr[0:idx], err
 }
 
 func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error) {
