@@ -48,6 +48,12 @@ func (c *Device) DevicePath() (string, error) {
 	return attr, wrapClientError(err, c, "DevicePath")
 }
 
+// TODO(ssx): not tested.
+func (c *Device) ListForwards() (string, error) {
+	attr, err := c.getAttribute("list-forward")
+	return attr, wrapClientError(err, c, "ListForward")
+}
+
 func (c *Device) State() (DeviceState, error) {
 	attr, err := c.getAttribute("get-state")
 	state, err := parseDeviceState(attr)
