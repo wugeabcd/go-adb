@@ -127,7 +127,7 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 }
 
 func (c *Device) commandOutput(cmd string, args ...string) (string, error) {
-	conn, err := c.Command(cmd, args...)
+	conn, err := c.OpenCommand(cmd, args...)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +138,7 @@ func (c *Device) commandOutput(cmd string, args ...string) (string, error) {
 	return string(resp), nil
 }
 
-func (c *Device) Command(cmd string, args ...string) (conn *wire.Conn, err error) {
+func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
 	cmd, err = prepareCommandLine(cmd, args...)
 	if err != nil {
 		return nil, wrapClientError(err, c, "RunCommand")
