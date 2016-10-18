@@ -76,6 +76,57 @@ func TestRunCommandNoArgs(t *testing.T) {
 	assert.Equal(t, "output", v)
 }
 
+func TestForward(t *testing.T) {
+	s := &MockServer{
+		Status:   wire.StatusSuccess,
+		Messages: []string{""},
+	}
+	client := (&Adb{s}).Device(DeviceWithSerial("abc"))
+	err := client.Forward(ForwardSpec{"tcp", "8999"}, ForwardSpec{"localabstract", "demo"})
+	assert.Equal(t, "host-serial:abc:forward:tcp:8999;localabstract:demo", s.Requests[0])
+	assert.NoError(t, err)
+}
+
+func TestForwardList(t *testing.T) {
+	s := &MockServer{
+		Status:   wire.StatusSuccess,
+		Messages: []string{"serial tcp:8999 tcp:d1\nserial tcp:8994 udp:d2"},
+	}
+	client := (&Adb{s}).Device(DeviceWithSerial("abc"))
+	fws, err := client.ForwardList()
+	assert.NoError(t, err)
+	assert.Equal(t, "host-serial:abc:list-forward", s.Requests[0])
+	assert.Equal(t, 2, len(fws))
+	assert.Equal(t, fws[0].Serial, "serial")
+	assert.Equal(t, fws[0].Local.Protocol, "tcp")
+	assert.Equal(t, fws[0].Local.PortOrName, "8999")
+	assert.Equal(t, fws[0].Remote.Protocol, "tcp")
+	assert.Equal(t, fws[0].Remote.PortOrName, "d1")
+	assert.Equal(t, fws[1].Remote.PortOrName, "d2")
+}
+
+func TestForwardRemove(t *testing.T) {
+	s := &MockServer{
+		Status:   wire.StatusSuccess,
+		Messages: []string{""},
+	}
+	client := (&Adb{s}).Device(DeviceWithSerial("abc"))
+	err := client.ForwardRemove(ForwardSpec{"tcp", "8999"})
+	assert.Equal(t, "host-serial:abc:killforward:tcp:8999", s.Requests[0])
+	assert.NoError(t, err)
+}
+
+func TestForwardRemoveAll(t *testing.T) {
+	s := &MockServer{
+		Status:   wire.StatusSuccess,
+		Messages: []string{""},
+	}
+	client := (&Adb{s}).Device(DeviceWithSerial("abc"))
+	err := client.ForwardRemoveAll()
+	assert.Equal(t, "host-serial:abc:killforward-all", s.Requests[0])
+	assert.NoError(t, err)
+}
+
 func TestProperties(t *testing.T) {
 	s := &MockServer{
 		Status:   wire.StatusSuccess,

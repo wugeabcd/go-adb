@@ -48,16 +48,78 @@ func (c *Device) DevicePath() (string, error) {
 	return attr, wrapClientError(err, c, "DevicePath")
 }
 
-// TODO(ssx): not tested.
-func (c *Device) ListForwards() (string, error) {
-	attr, err := c.getAttribute("list-forward")
-	return attr, wrapClientError(err, c, "ListForward")
-}
-
 func (c *Device) State() (DeviceState, error) {
 	attr, err := c.getAttribute("get-state")
 	state, err := parseDeviceState(attr)
 	return state, wrapClientError(err, c, "State")
+}
+
+var (
+	FProtocolTcp        = "tcp"
+	FProtocolAbstract   = "localabstract"
+	FProtocolReserved   = "localreserved"
+	FProtocolFilesystem = "localfilesystem"
+)
+
+type ForwardSpec struct {
+	Protocol   string
+	PortOrName string
+}
+
+func (f ForwardSpec) String() string {
+	return fmt.Sprintf("%s:%s", f.Protocol, f.PortOrName)
+}
+
+func (f *ForwardSpec) parseString(s string) error {
+	fields := strings.Split(s, ":")
+	if len(fields) != 2 {
+		return fmt.Errorf("expect string contains only one ':', str = %s", s)
+	}
+	f.Protocol = fields[0]
+	f.PortOrName = fields[1]
+	return nil
+}
+
+type ForwardPair struct {
+	Serial string
+	Local  ForwardSpec
+	Remote ForwardSpec
+}
+
+func (c *Device) ForwardList() (fs []ForwardPair, err error) {
+	attr, err := c.getAttribute("list-forward")
+	fields := strings.Fields(attr)
+	if len(fields)%3 != 0 {
+		return nil, fmt.Errorf("list forward parse error")
+	}
+	for i := 0; i < len(fields)/3; i++ {
+		var local, remote ForwardSpec
+		var serial = fields[i*3]
+		if err = local.parseString(fields[i*3+1]); err != nil {
+			return nil, err
+		}
+		if err = remote.parseString(fields[i*3+2]); err != nil {
+			return nil, err
+		}
+		fs = append(fs, ForwardPair{serial, local, remote})
+	}
+	return fs, nil
+}
+
+func (c *Device) ForwardRemove(local ForwardSpec) error {
+	_, err := c.getAttribute(fmt.Sprintf("killforward:%v", local))
+	return wrapClientError(err, c, "ForwardRemove")
+}
+
+func (c *Device) ForwardRemoveAll() error {
+	_, err := c.getAttribute("killforward-all")
+	return wrapClientError(err, c, "ForwardRemoveAll")
+}
+
+// Foward remote connection to local
+func (c *Device) Forward(local, remote ForwardSpec) error {
+	_, err := c.getAttribute(fmt.Sprintf("forward:%v;%v", local, remote))
+	return wrapClientError(err, c, "Forward")
 }
 
 func (c *Device) DeviceInfo() (*DeviceInfo, error) {
@@ -108,6 +170,9 @@ Source: https://android.googlesource.com/platform/system/core/+/master/adb/SERVI
 
 This method quotes the arguments for you, and will return an error if any of them
 contain double quotes.
+
+Because the adb shell converts all "\n" into "\r\n",
+so here we convert it back (maybe not good for binary output)
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	exArgs := append(args, ";", "echo", ":$?")
@@ -123,7 +188,8 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	if exitCode != 0 {
 		err = ShellExitError{strings.Join(args, " "), exitCode}
 	}
-	return outStr[0:idx], err
+	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1)
+	return outStr, err
 }
 
 func (c *Device) commandOutput(cmd string, args ...string) (string, error) {

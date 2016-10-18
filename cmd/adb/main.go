@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/cheggaaa/pb"
-	"github.com/zach-klippenstein/goadb"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/openatx/go-adb"
 )
 
 const StdIoFilename = "-"
@@ -31,6 +31,13 @@ var (
 		"List devices.")
 	devicesLongFlag = devicesCommand.Flag("long",
 		"Include extra detail about devices.").
+		Short('l').
+		Bool()
+
+	forwardCommand = kingpin.Command("forward",
+		"Forward")
+	forwardListFlag = forwardCommand.Flag("list",
+		"List forwards").
 		Short('l').
 		Bool()
 
@@ -85,6 +92,8 @@ func main() {
 		exitCode = pull(*pullProgressFlag, *pullRemoteArg, *pullLocalArg, parseDevice())
 	case "push":
 		exitCode = push(*pushProgressFlag, *pushLocalArg, *pushRemoteArg, parseDevice())
+	case "forward":
+		exitCode = forward(*forwardListFlag, parseDevice())
 	}
 
 	os.Exit(exitCode)
@@ -144,6 +153,19 @@ func runShellCommand(commandAndArgs []string, device adb.DeviceDescriptor) int {
 	}
 
 	fmt.Print(output)
+	return 0
+}
+
+func forward(listForwards bool, device adb.DeviceDescriptor) int {
+	client := client.Device(device)
+	fws, err := client.ForwardList()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		return 1
+	}
+	for _, fw := range fws {
+		fmt.Printf("%v %v %v\n", fw.Serial, fw.Local, fw.Remote)
+	}
 	return 0
 }
 
