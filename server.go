@@ -62,7 +62,8 @@ func newServer(config ServerConfig) (server, error) {
 	}
 
 	if config.Host == "" {
-		config.Host = "localhost"
+		// localhost becames very slow on windows(1s dial delay), use 127.0.0.1 works well
+		config.Host = "127.0.0.1"
 	}
 	if config.Port == 0 {
 		config.Port = AdbPort
