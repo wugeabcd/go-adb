@@ -62,6 +62,17 @@ func (conn *Conn) RoundTripSingleResponse(req []byte) (resp []byte, err error) {
 	return conn.ReadMessage()
 }
 
+// RoundTripSingleResponse sends a message to the server
+// Only read status
+func (conn *Conn) RoundTripSingleNoResponse(req []byte) (err error) {
+	err = conn.SendMessage(req)
+	if err != nil {
+		return
+	}
+	_, err = conn.ReadStatus(string(req))
+	return
+}
+
 func (conn *Conn) Close() error {
 	errs := struct {
 		SenderErr  error

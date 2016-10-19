@@ -49,6 +49,15 @@ func roundTripSingleResponse(s server, req string) ([]byte, error) {
 	return conn.RoundTripSingleResponse([]byte(req))
 }
 
+func roundTripSingleNoResponse(s server, req string) error {
+	conn, err := s.Dial()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return conn.RoundTripSingleNoResponse([]byte(req))
+}
+
 type realServer struct {
 	config ServerConfig
 

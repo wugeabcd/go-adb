@@ -88,10 +88,14 @@ type ForwardPair struct {
 
 func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 	attr, err := c.getAttribute("list-forward")
+	if err != nil {
+		return nil, err
+	}
 	fields := strings.Fields(attr)
 	if len(fields)%3 != 0 {
 		return nil, fmt.Errorf("list forward parse error")
 	}
+	fs = make([]ForwardPair, 0)
 	for i := 0; i < len(fields)/3; i++ {
 		var local, remote ForwardSpec
 		var serial = fields[i*3]
@@ -107,18 +111,21 @@ func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 }
 
 func (c *Device) ForwardRemove(local ForwardSpec) error {
-	_, err := c.getAttribute(fmt.Sprintf("killforward:%v", local))
+	err := roundTripSingleNoResponse(c.server,
+		fmt.Sprintf("%s:killforward:%v", c.descriptor.getHostPrefix(), local))
 	return wrapClientError(err, c, "ForwardRemove")
 }
 
 func (c *Device) ForwardRemoveAll() error {
-	_, err := c.getAttribute("killforward-all")
+	err := roundTripSingleNoResponse(c.server,
+		fmt.Sprintf("%s:killforward-all", c.descriptor.getHostPrefix()))
 	return wrapClientError(err, c, "ForwardRemoveAll")
 }
 
 // Foward remote connection to local
 func (c *Device) Forward(local, remote ForwardSpec) error {
-	_, err := c.getAttribute(fmt.Sprintf("forward:%v;%v", local, remote))
+	err := roundTripSingleNoResponse(c.server,
+		fmt.Sprintf("%s:forward:%v;%v", c.descriptor.getHostPrefix(), local, remote))
 	return wrapClientError(err, c, "Forward")
 }
 
