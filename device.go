@@ -87,6 +87,10 @@ type ForwardPair struct {
 }
 
 func (c *Device) ForwardList() (fs []ForwardPair, err error) {
+	devSerial, err := c.Serial()
+	if err != nil {
+		return nil, err
+	}
 	attr, err := c.getAttribute("list-forward")
 	if err != nil {
 		return nil, err
@@ -99,6 +103,9 @@ func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 	for i := 0; i < len(fields)/3; i++ {
 		var local, remote ForwardSpec
 		var serial = fields[i*3]
+		if serial != devSerial { // list-forward will show all the list include other device
+			continue
+		}
 		if err = local.parseString(fields[i*3+1]); err != nil {
 			return nil, err
 		}
