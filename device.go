@@ -70,6 +70,13 @@ func (f ForwardSpec) String() string {
 	return fmt.Sprintf("%s:%s", f.Protocol, f.PortOrName)
 }
 
+func (f ForwardSpec) Port() (int, error) {
+	if f.Protocol != FProtocolTcp {
+		return 0, fmt.Errorf("protocal is not tcp")
+	}
+	return strconv.Atoi(f.PortOrName)
+}
+
 func (f *ForwardSpec) parseString(s string) error {
 	fields := strings.Split(s, ":")
 	if len(fields) != 2 {
@@ -86,11 +93,9 @@ type ForwardPair struct {
 	Remote ForwardSpec
 }
 
+// If no device serial specified
+// all devices's forward list will returned
 func (c *Device) ForwardList() (fs []ForwardPair, err error) {
-	devSerial, err := c.Serial()
-	if err != nil {
-		return nil, err
-	}
 	attr, err := c.getAttribute("list-forward")
 	if err != nil {
 		return nil, err
@@ -103,7 +108,8 @@ func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 	for i := 0; i < len(fields)/3; i++ {
 		var local, remote ForwardSpec
 		var serial = fields[i*3]
-		if serial != devSerial { // list-forward will show all the list include other device
+		// skip other device serial forwards
+		if c.descriptor.descriptorType == DeviceSerial && c.descriptor.serial != serial {
 			continue
 		}
 		if err = local.parseString(fields[i*3+1]); err != nil {
@@ -134,6 +140,26 @@ func (c *Device) Forward(local, remote ForwardSpec) error {
 	err := roundTripSingleNoResponse(c.server,
 		fmt.Sprintf("%s:forward:%v;%v", c.descriptor.getHostPrefix(), local, remote))
 	return wrapClientError(err, c, "Forward")
+}
+
+// Forward to a free port
+// If forward already exists, just return current forworded port
+func (c *Device) ForwardToFreePort(remote ForwardSpec) (port int, err error) {
+	fws, err := c.ForwardList()
+	if err != nil {
+		return
+	}
+	for _, fw := range fws {
+		if fw.Remote == remote {
+			return fw.Local.Port()
+		}
+	}
+	port, err = getFreePort()
+	if err != nil {
+		return
+	}
+	err = c.Forward(ForwardSpec{FProtocolTcp, strconv.Itoa(port)}, remote)
+	return
 }
 
 func (c *Device) DeviceInfo() (*DeviceInfo, error) {

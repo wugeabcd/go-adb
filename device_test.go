@@ -90,19 +90,19 @@ func TestForward(t *testing.T) {
 func TestForwardList(t *testing.T) {
 	s := &MockServer{
 		Status:   wire.StatusSuccess,
-		Messages: []string{"serial tcp:8999 tcp:d1\nserial tcp:8994 udp:d2"},
+		Messages: []string{"serial tcp:8999 tcp:d1\nabc tcp:8994 udp:d2\nabc tcp:8995 udp:d3"},
 	}
 	client := (&Adb{s}).Device(DeviceWithSerial("abc"))
 	fws, err := client.ForwardList()
 	assert.NoError(t, err)
 	assert.Equal(t, "host-serial:abc:list-forward", s.Requests[0])
 	assert.Equal(t, 2, len(fws))
-	assert.Equal(t, fws[0].Serial, "serial")
+	assert.Equal(t, fws[0].Serial, "abc")
 	assert.Equal(t, fws[0].Local.Protocol, "tcp")
-	assert.Equal(t, fws[0].Local.PortOrName, "8999")
-	assert.Equal(t, fws[0].Remote.Protocol, "tcp")
-	assert.Equal(t, fws[0].Remote.PortOrName, "d1")
-	assert.Equal(t, fws[1].Remote.PortOrName, "d2")
+	assert.Equal(t, fws[0].Local.PortOrName, "8994")
+	assert.Equal(t, fws[0].Remote.Protocol, "udp")
+	assert.Equal(t, fws[0].Remote.PortOrName, "d2")
+	assert.Equal(t, fws[1].Remote.PortOrName, "d3")
 }
 
 func TestForwardRemove(t *testing.T) {

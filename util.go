@@ -2,8 +2,10 @@ package adb
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/openatx/go-adb/internal/errors"
@@ -37,4 +39,21 @@ func wrapClientError(err error, client interface{}, operation string, args ...in
 		Message: fmt.Sprintf("error performing %s on %s", fmt.Sprintf(operation, args...), clientType),
 		Details: client,
 	}
+}
+
+// Get a free port.
+func getFreePort() (port int, err error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	addr := listener.Addr().String()
+	_, portString, err := net.SplitHostPort(addr)
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.Atoi(portString)
 }
