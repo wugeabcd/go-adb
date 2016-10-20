@@ -64,6 +64,15 @@ func (s *MockServer) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
+func (s *MockServer) Write(p []byte) (int, error) {
+	s.logMethod("Write")
+	if err := s.getNextErrToReturn(); err != nil {
+		return 0, err
+	}
+	// TODO(ssx): currently this function not used, just for implement the Sender interface
+	return len(p), nil
+}
+
 func (s *MockServer) ReadMessage() ([]byte, error) {
 	s.logMethod("ReadMessage")
 	if err := s.getNextErrToReturn(); err != nil {
