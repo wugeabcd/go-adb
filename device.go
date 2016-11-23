@@ -273,6 +273,7 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 	return conn, nil
 }
 
+// Properties extract info from $ adb shell getprop
 func (c *Device) Properties() (props map[string]string, err error) {
 	propOutput, err := c.commandOutput("getprop")
 	if err != nil {

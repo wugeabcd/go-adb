@@ -169,10 +169,11 @@ func readHexLength(r io.Reader) (int, error) {
 		return 0, errors.WrapErrorf(err, errors.NetworkError, "could not parse hex length %v", lengthHex)
 	}
 
+	// COMMENT(ssx): comment the below code because I encounter message length > 255
 	// Clip the length to 255, as per the Google implementation.
-	if length > MaxMessageLength {
-		length = MaxMessageLength
-	}
+	// if length > MaxMessageLength {
+	// 	length = MaxMessageLength
+	// }
 
 	return int(length), nil
 }
