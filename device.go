@@ -222,7 +222,7 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	}
 	idx := strings.LastIndexByte(outStr, ':')
 	if idx == -1 {
-		return outStr, fmt.Errorf("adb shell error, parse exit code failed")
+		return outStr, fmt.Errorf("adb shell aborted, can not parse exit code")
 	}
 	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
 	if exitCode != 0 {
