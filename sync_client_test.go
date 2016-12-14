@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openatx/go-adb/internal/errors"
-	"github.com/openatx/go-adb/wire"
+	"github.com/yosemite-open/go-adb/internal/errors"
+	"github.com/yosemite-open/go-adb/wire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

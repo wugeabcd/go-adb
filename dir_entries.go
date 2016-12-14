@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/openatx/go-adb/wire"
+	"github.com/yosemite-open/go-adb/wire"
 )
 
 // DirEntry holds information about a directory entry on a device.

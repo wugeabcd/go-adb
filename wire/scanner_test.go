@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/openatx/go-adb/internal/errors"
+	"github.com/yosemite-open/go-adb/internal/errors"
 	"github.com/stretchr/testify/assert"
 )
 

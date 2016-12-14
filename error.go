@@ -1,6 +1,6 @@
 package adb
 
-import "github.com/openatx/go-adb/internal/errors"
+import "github.com/yosemite-open/go-adb/internal/errors"
 
 type ErrCode errors.ErrCode
 

@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/openatx/go-adb/internal/errors"
+	"github.com/yosemite-open/go-adb/internal/errors"
 )
 
 // ErrorResponseDetails is an error message returned by the server for a particular request.

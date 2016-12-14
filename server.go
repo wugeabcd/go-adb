@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/openatx/go-adb/internal/errors"
-	"github.com/openatx/go-adb/wire"
+	"github.com/yosemite-open/go-adb/internal/errors"
+	"github.com/yosemite-open/go-adb/wire"
 )
 
 const (

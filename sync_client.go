@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/openatx/go-adb/internal/errors"
-	"github.com/openatx/go-adb/wire"
+	"github.com/yosemite-open/go-adb/internal/errors"
+	"github.com/yosemite-open/go-adb/wire"
 )
 
 var zeroTime = time.Unix(0, 0).UTC()
