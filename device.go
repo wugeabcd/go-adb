@@ -215,24 +215,6 @@ Because the adb shell converts all "\n" into "\r\n",
 so here we convert it back (maybe not good for binary output)
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
-	exArgs := append(args, ";", "echo", ":$?")
-	outStr, err := c.commandOutput(cmd, exArgs...)
-	if err != nil {
-		return outStr, err
-	}
-	idx := strings.LastIndexByte(outStr, ':')
-	if idx == -1 {
-		return outStr, fmt.Errorf("adb shell aborted, can not parse exit code")
-	}
-	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
-	if exitCode != 0 {
-		err = ShellExitError{strings.Join(args, " "), exitCode}
-	}
-	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1)
-	return outStr, err
-}
-
-func (c *Device) commandOutput(cmd string, args ...string) (string, error) {
 	conn, err := c.OpenCommand(cmd, args...)
 	if err != nil {
 		return "", err
@@ -241,7 +223,32 @@ func (c *Device) commandOutput(cmd string, args ...string) (string, error) {
 	if err != nil {
 		return "", wrapClientError(err, c, "RunCommand")
 	}
-	return string(resp), nil
+	outStr := strings.Replace(string(resp), "\r\n", "\n", -1)
+	return outStr, nil
+}
+
+/*
+RunCommandWithExitCode use a little tricky to get exit code
+
+The tricky is append "; echo :$?" to the command,
+and parse out the exit code from output
+*/
+func (c *Device) RunCommandWithExitCode(cmd string, args ...string) (string, int, error) {
+	exArgs := append(args, ";", "echo", ":$?")
+	outStr, err := c.RunCommand(cmd, exArgs...)
+	if err != nil {
+		return outStr, 0, err
+	}
+	idx := strings.LastIndexByte(outStr, ':')
+	if idx == -1 {
+		return outStr, 0, fmt.Errorf("adb shell aborted, can not parse exit code")
+	}
+	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
+	if exitCode != 0 {
+		err = ShellExitError{strings.Join(args, " "), exitCode}
+	}
+	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1) // put somewhere else
+	return outStr, exitCode, err
 }
 
 func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
@@ -275,7 +282,7 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 
 // Properties extract info from $ adb shell getprop
 func (c *Device) Properties() (props map[string]string, err error) {
-	propOutput, err := c.commandOutput("getprop")
+	propOutput, err := c.RunCommand("getprop")
 	if err != nil {
 		return nil, err
 	}

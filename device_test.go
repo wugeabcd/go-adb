@@ -3,9 +3,9 @@ package adb
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/yosemite-open/go-adb/internal/errors"
 	"github.com/yosemite-open/go-adb/wire"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAttribute(t *testing.T) {
@@ -65,13 +65,13 @@ func newDeviceClientWithDeviceLister(serial string, deviceLister func() ([]*Devi
 func TestRunCommandNoArgs(t *testing.T) {
 	s := &MockServer{
 		Status:   wire.StatusSuccess,
-		Messages: []string{"output:0"}, // 0 is exit code
+		Messages: []string{"output"},
 	}
 	client := (&Adb{s}).Device(AnyDevice())
 
 	v, err := client.RunCommand("cmd")
 	assert.Equal(t, "host:transport-any", s.Requests[0])
-	assert.Equal(t, "shell:cmd ; echo :$?", s.Requests[1])
+	assert.Equal(t, "shell:cmd", s.Requests[1])
 	assert.NoError(t, err)
 	assert.Equal(t, "output", v)
 }
