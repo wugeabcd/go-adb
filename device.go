@@ -261,7 +261,7 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 		return nil, wrapClientError(err, c, "RunCommand")
 	}
 	defer func() {
-		if err != nil {
+		if err != nil && conn != nil {
 			conn.Close()
 		}
 	}()
