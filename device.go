@@ -93,8 +93,8 @@ type ForwardPair struct {
 	Remote ForwardSpec
 }
 
-// If no device serial specified
-// all devices's forward list will returned
+// ForwardList returns list with struct ForwardPair
+// If no device serial specified all devices's forward list will returned
 func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 	attr, err := c.getAttribute("list-forward")
 	if err != nil {
@@ -123,26 +123,28 @@ func (c *Device) ForwardList() (fs []ForwardPair, err error) {
 	return fs, nil
 }
 
+// ForwardRemove specified forward
 func (c *Device) ForwardRemove(local ForwardSpec) error {
 	err := roundTripSingleNoResponse(c.server,
 		fmt.Sprintf("%s:killforward:%v", c.descriptor.getHostPrefix(), local))
 	return wrapClientError(err, c, "ForwardRemove")
 }
 
+// ForwardRemoveAll cancel all exists forwards
 func (c *Device) ForwardRemoveAll() error {
 	err := roundTripSingleNoResponse(c.server,
 		fmt.Sprintf("%s:killforward-all", c.descriptor.getHostPrefix()))
 	return wrapClientError(err, c, "ForwardRemoveAll")
 }
 
-// Foward remote connection to local
+// Forward remote connection to local
 func (c *Device) Forward(local, remote ForwardSpec) error {
 	err := roundTripSingleNoResponse(c.server,
 		fmt.Sprintf("%s:forward:%v;%v", c.descriptor.getHostPrefix(), local, remote))
 	return wrapClientError(err, c, "Forward")
 }
 
-// Forward to a free port
+// ForwardToFreePort return random generated port
 // If forward already exists, just return current forworded port
 func (c *Device) ForwardToFreePort(remote ForwardSpec) (port int, err error) {
 	fws, err := c.ForwardList()
@@ -159,6 +161,53 @@ func (c *Device) ForwardToFreePort(remote ForwardSpec) (port int, err error) {
 		return
 	}
 	err = c.Forward(ForwardSpec{FProtocolTcp, strconv.Itoa(port)}, remote)
+	return
+}
+
+type PackageInfo struct {
+	Name    string
+	Path    string
+	Version struct {
+		Code int
+		Name string
+	}
+}
+
+var (
+	rePkgPath = regexp.MustCompile(`codePath=([^\s]+)`)
+	reVerCode = regexp.MustCompile(`versionCode=(\d+)`)
+	reVerName = regexp.MustCompile(`versionName=([^\s]+)`)
+)
+
+// StatPackage returns PackageInfo
+// If package not found, err will be ErrPackageNotExist
+func (c *Device) StatPackage(packageName string) (pi PackageInfo, err error) {
+	pi.Name = packageName
+	out, err := c.RunCommand("dumpsys", "package", packageName)
+	if err != nil {
+		return
+	}
+
+	matches := rePkgPath.FindStringSubmatch(out)
+	if len(matches) == 0 {
+		err = ErrPackageNotExist
+		return
+	}
+	pi.Path = matches[1]
+
+	matches = reVerCode.FindStringSubmatch(out)
+	if len(matches) == 0 {
+		err = ErrPackageNotExist
+		return
+	}
+	pi.Version.Code, _ = strconv.Atoi(matches[1])
+
+	matches = reVerName.FindStringSubmatch(out)
+	if len(matches) == 0 {
+		err = ErrPackageNotExist
+		return
+	}
+	pi.Version.Name = matches[1]
 	return
 }
 
