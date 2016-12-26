@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -164,53 +163,6 @@ func (c *Device) ForwardToFreePort(remote ForwardSpec) (port int, err error) {
 	return
 }
 
-type PackageInfo struct {
-	Name    string
-	Path    string
-	Version struct {
-		Code int
-		Name string
-	}
-}
-
-var (
-	rePkgPath = regexp.MustCompile(`codePath=([^\s]+)`)
-	reVerCode = regexp.MustCompile(`versionCode=(\d+)`)
-	reVerName = regexp.MustCompile(`versionName=([^\s]+)`)
-)
-
-// StatPackage returns PackageInfo
-// If package not found, err will be ErrPackageNotExist
-func (c *Device) StatPackage(packageName string) (pi PackageInfo, err error) {
-	pi.Name = packageName
-	out, err := c.RunCommand("dumpsys", "package", packageName)
-	if err != nil {
-		return
-	}
-
-	matches := rePkgPath.FindStringSubmatch(out)
-	if len(matches) == 0 {
-		err = ErrPackageNotExist
-		return
-	}
-	pi.Path = matches[1]
-
-	matches = reVerCode.FindStringSubmatch(out)
-	if len(matches) == 0 {
-		err = ErrPackageNotExist
-		return
-	}
-	pi.Version.Code, _ = strconv.Atoi(matches[1])
-
-	matches = reVerName.FindStringSubmatch(out)
-	if len(matches) == 0 {
-		err = ErrPackageNotExist
-		return
-	}
-	pi.Version.Name = matches[1]
-	return
-}
-
 func (c *Device) DeviceInfo() (*DeviceInfo, error) {
 	// Adb doesn't actually provide a way to get this for an individual device,
 	// so we have to just list devices and find ourselves.
@@ -276,30 +228,6 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	return outStr, nil
 }
 
-/*
-RunCommandWithExitCode use a little tricky to get exit code
-
-The tricky is append "; echo :$?" to the command,
-and parse out the exit code from output
-*/
-func (c *Device) RunCommandWithExitCode(cmd string, args ...string) (string, int, error) {
-	exArgs := append(args, ";", "echo", ":$?")
-	outStr, err := c.RunCommand(cmd, exArgs...)
-	if err != nil {
-		return outStr, 0, err
-	}
-	idx := strings.LastIndexByte(outStr, ':')
-	if idx == -1 {
-		return outStr, 0, fmt.Errorf("adb shell aborted, can not parse exit code")
-	}
-	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
-	if exitCode != 0 {
-		err = ShellExitError{strings.Join(args, " "), exitCode}
-	}
-	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1) // put somewhere else
-	return outStr, exitCode, err
-}
-
 func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
 	cmd, err = prepareCommandLine(cmd, args...)
 	if err != nil {
@@ -327,23 +255,6 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 		return nil, wrapClientError(err, c, "Command")
 	}
 	return conn, nil
-}
-
-// Properties extract info from $ adb shell getprop
-func (c *Device) Properties() (props map[string]string, err error) {
-	propOutput, err := c.RunCommand("getprop")
-	if err != nil {
-		return nil, err
-	}
-	re := regexp.MustCompile(`\[(.*?)\]:\s*\[(.*?)\]`)
-	matches := re.FindAllStringSubmatch(propOutput, -1)
-	props = make(map[string]string)
-	for _, m := range matches {
-		var key = m[1]
-		var val = m[2]
-		props[key] = val
-	}
-	return
 }
 
 /*
