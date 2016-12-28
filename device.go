@@ -187,15 +187,6 @@ func (c *Device) DeviceInfo() (*DeviceInfo, error) {
 	return nil, wrapClientError(err, c, "DeviceInfo")
 }
 
-type ShellExitError struct {
-	Command  string
-	ExitCode int
-}
-
-func (s ShellExitError) Error() string {
-	return fmt.Sprintf("shell %s exit code %d", s.Command, s.ExitCode)
-}
-
 /*
 RunCommand runs the specified commands on a shell on the device.
 

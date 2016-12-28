@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 type Process struct {
@@ -63,6 +64,24 @@ func (c *Device) ListProcesses() (ps []Process, err error) {
 		ps = append(ps, process)
 	}
 	return
+}
+
+// KillProcessWithName return if killed success
+func (c *Device) KillProcessWithName(name string, sig syscall.Signal) error {
+	ps, err := c.ListProcesses()
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if p.Name != name {
+			continue
+		}
+		_, _, er := c.RunCommandWithExitCode("kill", "-"+strconv.Itoa(int(sig)), strconv.Itoa(p.Pid))
+		if er != nil {
+			return er
+		}
+	}
+	return nil
 }
 
 type PackageInfo struct {
@@ -147,8 +166,18 @@ func (c *Device) RunCommandWithExitCode(cmd string, args ...string) (string, int
 	}
 	exitCode, _ := strconv.Atoi(strings.TrimSpace(outStr[idx+1:]))
 	if exitCode != 0 {
-		err = ShellExitError{strings.Join(args, " "), exitCode}
+		commandLine, _ := prepareCommandLine(cmd, args...)
+		err = ShellExitError{commandLine, exitCode}
 	}
 	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1) // put somewhere else
 	return outStr, exitCode, err
+}
+
+type ShellExitError struct {
+	Command  string
+	ExitCode int
+}
+
+func (s ShellExitError) Error() string {
+	return fmt.Sprintf("shell %s exit code %d", strconv.Quote(s.Command), s.ExitCode)
 }
