@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -66,8 +67,8 @@ func (c *Device) ListProcesses() (ps []Process, err error) {
 	return
 }
 
-// KillProcessWithName return if killed success
-func (c *Device) KillProcessWithName(name string, sig syscall.Signal) error {
+// KillProcessByName return if killed success
+func (c *Device) KillProcessByName(name string, sig syscall.Signal) error {
 	ps, err := c.ListProcesses()
 	if err != nil {
 		return err
@@ -76,6 +77,7 @@ func (c *Device) KillProcessWithName(name string, sig syscall.Signal) error {
 		if p.Name != name {
 			continue
 		}
+		log.Println(p.Name, p.Pid)
 		_, _, er := c.RunCommandWithExitCode("kill", "-"+strconv.Itoa(int(sig)), strconv.Itoa(p.Pid))
 		if er != nil {
 			return er
