@@ -329,8 +329,8 @@ func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (writ
 		// wait until write finished.
 		fromTime := time.Now()
 		for {
-			if time.Since(fromTime) > time.Second*5 {
-				err = fmt.Errorf("write file to device timeout")
+			if time.Since(fromTime) > time.Second*600 {
+				err = fmt.Errorf("write file to device timeout (10min)")
 				return
 			}
 			finfo, er := c.Stat(path)
