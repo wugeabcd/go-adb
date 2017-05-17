@@ -4,10 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math/rand"
+	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
+
+	"github.com/franela/goreq"
 )
 
 type Process struct {
@@ -181,4 +187,89 @@ type ShellExitError struct {
 
 func (s ShellExitError) Error() string {
 	return fmt.Sprintf("shell %s exit code %d", strconv.Quote(s.Command), s.ExitCode)
+}
+
+// DoWriteFile return an object, use this object can Cancel write and get Process
+func (c *Device) DoSyncFile(path string, rd io.ReadCloser, size int64, perms os.FileMode) (aw *asyncWriter, err error) {
+	dst, err := c.OpenWrite(path, perms, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	awr := newAsyncWriter(c, dst, path, size)
+	go func() {
+		awr.doCopy(rd)
+		rd.Close()
+	}()
+	return awr, nil
+}
+
+func (c *Device) DoSyncLocalFile(dst string, src string, perms os.FileMode) (aw *asyncWriter, err error) {
+	f, err := os.Open(src)
+	if err != nil {
+		return
+	}
+
+	finfo, err := f.Stat()
+	if err != nil {
+		return
+	}
+	return c.DoSyncFile(dst, f, finfo.Size(), perms)
+}
+
+func (c *Device) DoSyncHTTPFile(dst string, srcUrl string, perms os.FileMode) (aw *asyncWriter, err error) {
+	res, err := goreq.Request{Uri: srcUrl}.Do()
+	if err != nil {
+		return
+	}
+	var length int64
+	fmt.Sscanf(res.Header.Get("Content-Length"), "%d", &length)
+	return c.DoSyncFile(dst, res.Body, length, perms)
+}
+
+// WriteToFile write a reader stream to device
+func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (written int64, err error) {
+	dst, err := c.OpenWrite(path, perms, time.Now())
+	if err != nil {
+		return
+	}
+	defer func() {
+		dst.Close()
+		if err != nil {
+			return
+		}
+		// wait until write finished.
+		fromTime := time.Now()
+		for {
+			if time.Since(fromTime) > time.Second*600 {
+				err = fmt.Errorf("write file to device timeout (10min)")
+				return
+			}
+			finfo, er := c.Stat(path)
+			if er != nil && !HasErrCode(er, FileNoExistError) {
+				err = er
+				return
+			}
+			if finfo != nil && finfo.Size == int32(written) {
+				break
+			}
+			time.Sleep(time.Duration(200+rand.Intn(100)) * time.Millisecond)
+		}
+	}()
+	written, err = io.Copy(dst, rd)
+	return
+}
+
+// WriteHttpToFile download http resource to device
+func (c *Device) WriteHttpToFile(path string, urlStr string, perms os.FileMode) (written int64, err error) {
+	resp, err := http.Get(urlStr)
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("http download <%s> status %v", urlStr, resp.Status)
+		return
+	}
+	defer resp.Body.Close()
+
+	return c.WriteToFile(path, resp.Body, perms)
 }

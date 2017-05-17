@@ -3,8 +3,6 @@ package adb
 import (
 	"fmt"
 	"io"
-	"math/rand"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -313,54 +311,6 @@ func (c *Device) OpenWrite(path string, perms os.FileMode, mtime time.Time) (io.
 
 	writer, err := sendFile(conn, path, perms, mtime)
 	return writer, wrapClientError(err, c, "OpenWrite(%s)", path)
-}
-
-// WriteToFile write a reader stream to device
-func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (written int64, err error) {
-	dst, err := c.OpenWrite(path, perms, time.Now())
-	if err != nil {
-		return
-	}
-	defer func() {
-		dst.Close()
-		if err != nil {
-			return
-		}
-		// wait until write finished.
-		fromTime := time.Now()
-		for {
-			if time.Since(fromTime) > time.Second*600 {
-				err = fmt.Errorf("write file to device timeout (10min)")
-				return
-			}
-			finfo, er := c.Stat(path)
-			if er != nil && !HasErrCode(er, FileNoExistError) {
-				err = er
-				return
-			}
-			if finfo != nil && finfo.Size == int32(written) {
-				break
-			}
-			time.Sleep(time.Duration(200+rand.Intn(100)) * time.Millisecond)
-		}
-	}()
-	written, err = io.Copy(dst, rd)
-	return
-}
-
-// WriteHttpToFile download http resource to device
-func (c *Device) WriteHttpToFile(path string, urlStr string, perms os.FileMode) (written int64, err error) {
-	resp, err := http.Get(urlStr)
-	if err != nil {
-		return
-	}
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("http download <%s> status %v", urlStr, resp.Status)
-		return
-	}
-	defer resp.Body.Close()
-
-	return c.WriteToFile(path, resp.Body, perms)
 }
 
 // getAttribute returns the first message returned by the server by running
