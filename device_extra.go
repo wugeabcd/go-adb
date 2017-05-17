@@ -190,7 +190,7 @@ func (s ShellExitError) Error() string {
 }
 
 // DoWriteFile return an object, use this object can Cancel write and get Process
-func (c *Device) DoSyncFile(path string, rd io.ReadCloser, size int64, perms os.FileMode) (aw *asyncWriter, err error) {
+func (c *Device) DoSyncFile(path string, rd io.ReadCloser, size int64, perms os.FileMode) (aw *AsyncWriter, err error) {
 	dst, err := c.OpenWrite(path, perms, time.Now())
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (c *Device) DoSyncFile(path string, rd io.ReadCloser, size int64, perms os.
 	return awr, nil
 }
 
-func (c *Device) DoSyncLocalFile(dst string, src string, perms os.FileMode) (aw *asyncWriter, err error) {
+func (c *Device) DoSyncLocalFile(dst string, src string, perms os.FileMode) (aw *AsyncWriter, err error) {
 	f, err := os.Open(src)
 	if err != nil {
 		return
@@ -216,7 +216,7 @@ func (c *Device) DoSyncLocalFile(dst string, src string, perms os.FileMode) (aw 
 	return c.DoSyncFile(dst, f, finfo.Size(), perms)
 }
 
-func (c *Device) DoSyncHTTPFile(dst string, srcUrl string, perms os.FileMode) (aw *asyncWriter, err error) {
+func (c *Device) DoSyncHTTPFile(dst string, srcUrl string, perms os.FileMode) (aw *AsyncWriter, err error) {
 	res, err := goreq.Request{Uri: srcUrl}.Do()
 	if err != nil {
 		return

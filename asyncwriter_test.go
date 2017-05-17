@@ -1,10 +1,14 @@
-package adb
+package adb_test
 
-import "log"
+import (
+	"log"
+
+	adb "github.com/yosemite-open/go-adb"
+)
 
 func ExampleDoSyncLocalFile() {
-	adb, _ := New()
-	dev := adb.Device(AnyUsbDevice())
+	adbc, _ := adb.New()
+	dev := adbc.Device(adb.AnyUsbDevice())
 
 	awr, err := dev.DoSyncLocalFile("/data/local/tmp/tmp.txt", "adb.go", 0644)
 	if err != nil {

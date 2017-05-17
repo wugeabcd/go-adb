@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-type asyncWriter struct {
+type AsyncWriter struct {
 	Done           chan bool
 	DoneCopy       chan bool // for debug
 	C              chan bool
@@ -41,8 +41,8 @@ type asyncWriter struct {
 	wg             sync.WaitGroup
 }
 
-func newAsyncWriter(dev *Device, dst io.WriteCloser, dstPath string, totalSize int64) *asyncWriter {
-	return &asyncWriter{
+func newAsyncWriter(dev *Device, dst io.WriteCloser, dstPath string, totalSize int64) *AsyncWriter {
+	return &AsyncWriter{
 		Done:      make(chan bool),
 		DoneCopy:  make(chan bool, 1),
 		C:         make(chan bool),
@@ -54,30 +54,33 @@ func newAsyncWriter(dev *Device, dst io.WriteCloser, dstPath string, totalSize i
 	}
 }
 
-func (a *asyncWriter) BytesCompleted() int64 {
+// BytesCompleted returns the total number of bytes which have been copied to the destination
+func (a *AsyncWriter) BytesCompleted() int64 {
 	return a.bytesCompleted
 }
 
-func (a *asyncWriter) Progress() float64 {
+func (a *AsyncWriter) Progress() float64 {
 	if (a.TotalSize) == 0 {
 		return 0.0
 	}
 	return float64(a.bytesCompleted) / float64(a.TotalSize)
 }
 
-func (a *asyncWriter) Err() error {
+// Err return error immediately
+func (a *AsyncWriter) Err() error {
 	return a.err
 }
 
-func (a *asyncWriter) Cancel() error {
+func (a *AsyncWriter) Cancel() error {
 	return a.dst.Close()
 }
 
-func (a *asyncWriter) Wait() {
+// Wait blocks until sync is completed
+func (a *AsyncWriter) Wait() {
 	<-a.Done
 }
 
-func (a *asyncWriter) doCopy(reader io.Reader) {
+func (a *AsyncWriter) doCopy(reader io.Reader) {
 	a.wg.Add(1)
 	defer a.wg.Done()
 
@@ -92,7 +95,7 @@ func (a *asyncWriter) doCopy(reader io.Reader) {
 	a.DoneCopy <- true
 }
 
-func (a *asyncWriter) darinProgress() {
+func (a *AsyncWriter) darinProgress() {
 	t := time.NewTicker(time.Millisecond * 500)
 	defer func() {
 		t.Stop()
