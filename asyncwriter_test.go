@@ -10,7 +10,7 @@ func ExampleDevice_DoSyncLocalFile() {
 	adbc, _ := adb.New()
 	dev := adbc.Device(adb.AnyUsbDevice())
 
-	awr, err := dev.DoSyncLocalFile("/data/local/tmp/tmp.txt", "adb.go", 0644)
+	sync, err := dev.DoSyncLocalFile("/data/local/tmp/tmp.txt", "local.txt", 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -18,17 +18,17 @@ func ExampleDevice_DoSyncLocalFile() {
 Loop:
 	for {
 		select {
-		case <-awr.C:
+		case <-sync.C:
 			log.Printf("transfered %v / %v bytes (%.2f%%)",
-				awr.BytesCompleted(),
-				awr.TotalSize,
-				100*awr.Progress())
-		case <-awr.DoneCopy:
+				sync.BytesCompleted(),
+				sync.TotalSize,
+				100*sync.Progress())
+		case <-sync.DoneCopy:
 			log.Printf("finish io copy")
-		case <-awr.Done:
+		case <-sync.Done:
 			log.Printf("finish system copy, this is final")
 			break Loop
 		}
 	}
-	log.Printf("copy error:", awr.Err())
+	log.Printf("copy error:", sync.Err())
 }
