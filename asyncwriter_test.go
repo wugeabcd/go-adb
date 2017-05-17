@@ -6,7 +6,7 @@ import (
 	adb "github.com/yosemite-open/go-adb"
 )
 
-func ExampleDoSyncLocalFile() {
+func ExampleDevice_DoSyncLocalFile() {
 	adbc, _ := adb.New()
 	dev := adbc.Device(adb.AnyUsbDevice())
 

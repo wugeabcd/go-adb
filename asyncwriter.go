@@ -1,24 +1,3 @@
-/* Example Usage
-
-aw := newAsyncWriter(device, dst, )
-go aw.doCopy()
-
-Loop:
-for {
-        select {
-                case <- aw.C:
-                        fmt.Printf("transfered %v / %v bytes (%.2f%%)\n",
-                                aw.BytesCompleted(),
-                                aw.TotalSize,
-                                100*aw.Progress())
-                case <- aw.Done:
-                        break Loop
-        }
-}
-if err := aw.Err(); err != nil {
-        log.Fatal(err)
-}
-*/
 package adb
 
 import (
