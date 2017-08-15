@@ -217,7 +217,11 @@ func (c *Device) DoSyncLocalFile(dst string, src string, perms os.FileMode) (aw 
 }
 
 func (c *Device) DoSyncHTTPFile(dst string, srcUrl string, perms os.FileMode) (aw *AsyncWriter, err error) {
-	res, err := goreq.Request{Uri: srcUrl}.Do()
+	res, err := goreq.Request{
+		Uri:             srcUrl,
+		RedirectHeaders: true,
+		MaxRedirects:    10,
+	}.Do()
 	if err != nil {
 		return
 	}
