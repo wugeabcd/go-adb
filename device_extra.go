@@ -238,7 +238,7 @@ func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (writ
 	}
 	defer func() {
 		dst.Close()
-		if err != nil {
+		if err != nil || written == 0 {
 			return
 		}
 		// wait until write finished.
@@ -253,6 +253,10 @@ func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (writ
 				err = er
 				return
 			}
+			if finfo == nil {
+				err = fmt.Errorf("target file %s not created", strconv.Quote(path))
+				return
+			}
 			if finfo != nil && finfo.Size == int32(written) {
 				break
 			}
@@ -265,7 +269,11 @@ func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (writ
 
 // WriteHttpToFile download http resource to device
 func (c *Device) WriteHttpToFile(path string, urlStr string, perms os.FileMode) (written int64, err error) {
-	resp, err := http.Get(urlStr)
+	resp, err := goreq.Request{
+		Uri:             urlStr,
+		RedirectHeaders: true,
+		MaxRedirects:    10,
+	}.Do()
 	if err != nil {
 		return
 	}
