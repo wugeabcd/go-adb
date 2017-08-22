@@ -277,11 +277,10 @@ func (c *Device) WriteHttpToFile(path string, urlStr string, perms os.FileMode) 
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("http download <%s> status %v", urlStr, resp.Status)
 		return
 	}
-	defer resp.Body.Close()
-
 	return c.WriteToFile(path, resp.Body, perms)
 }
