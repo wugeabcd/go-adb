@@ -3,7 +3,7 @@ package wire
 import (
 	"testing"
 
-	"github.com/yosemite-open/go-adb/internal/errors"
+	"github.com/jt6562/go-adb/internal/errors"
 	"github.com/stretchr/testify/assert"
 )
 

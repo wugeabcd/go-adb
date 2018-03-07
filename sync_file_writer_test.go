@@ -8,7 +8,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"github.com/yosemite-open/go-adb/wire"
+	"github.com/jt6562/go-adb/wire"
 	"github.com/stretchr/testify/assert"
 )
 

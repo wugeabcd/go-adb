@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"github.com/yosemite-open/go-adb/internal/errors"
+	"github.com/jt6562/go-adb/internal/errors"
 )
 
 // TODO(zach): All EOF errors returned from networoking calls should use ConnectionResetError.

@@ -3,8 +3,8 @@ package adb
 import (
 	"io"
 
-	"github.com/yosemite-open/go-adb/internal/errors"
-	"github.com/yosemite-open/go-adb/wire"
+	"github.com/jt6562/go-adb/internal/errors"
+	"github.com/jt6562/go-adb/wire"
 )
 
 // syncFileReader wraps a SyncConn that has requested to receive a file.
