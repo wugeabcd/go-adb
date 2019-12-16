@@ -188,7 +188,7 @@ func (c *Device) DeviceInfo() (*DeviceInfo, error) {
 }
 
 /*
-RunCommand runs the specified commands on a shell on the device.
+RunCommandAsString runs the specified commands on a shell on the device.
 
 From the Android docs:
 	Run 'command arg1 arg2 ...' in a shell on the device, and return
@@ -206,27 +206,27 @@ contain double quotes.
 Because the adb shell converts all "\n" into "\r\n",
 so here we convert it back (maybe not good for binary output)
 */
-func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
+func (c *Device) RunCommandAsString(cmd string, args ...string) (string, error) {
 	conn, err := c.OpenCommand(cmd, args...)
 	if err != nil {
 		return "", err
 	}
 	resp, err := conn.ReadUntilEof()
 	if err != nil {
-		return "", wrapClientError(err, c, "RunCommand")
+		return "", wrapClientError(err, c, "RunCommandAsString")
 	}
-	outStr := strings.Replace(string(resp), "\r\n", "\n", -1)
+	outStr := strings.ReplaceAll(string(resp), "\r\n", "\n")
 	return outStr, nil
 }
 
 func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
 	cmd, err = prepareCommandLine(cmd, args...)
 	if err != nil {
-		return nil, wrapClientError(err, c, "RunCommand")
+		return nil, wrapClientError(err, c, "OpenCommand")
 	}
 	conn, err = c.dialDevice()
 	if err != nil {
-		return nil, wrapClientError(err, c, "RunCommand")
+		return nil, wrapClientError(err, c, "OpenCommand")
 	}
 	defer func() {
 		if err != nil && conn != nil {

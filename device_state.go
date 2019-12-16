@@ -20,10 +20,10 @@ const (
 )
 
 var deviceStateStrings = map[string]DeviceState{
-	"":             StateDisconnected,
-	"offline":      StateOffline,
-	"device":       StateOnline,
-	"unauthorized": StateUnauthorized,
+	"":               StateDisconnected,
+	"offline":        StateOffline,
+	"device":         StateOnline,
+	"unauthorized":   StateUnauthorized,
 	"no permissions": StateNoPermissions,
 }
 

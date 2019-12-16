@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/cheggaaa/pb"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/kvnxiao/go-adb"
 )
 
@@ -146,7 +146,7 @@ func runShellCommand(commandAndArgs []string, device adb.DeviceDescriptor) int {
 	}
 
 	client := client.Device(device)
-	output, err := client.RunCommand(command, args...)
+	output, err := client.RunCommandAsString(command, args...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1
@@ -277,13 +277,9 @@ func copyWithProgressAndStats(dst io.Writer, src io.Reader, size int, showProgre
 	if showProgress && size > 0 {
 		progress = pb.New(size)
 		// Write to stderr in case dst is stdout.
-		progress.Output = os.Stderr
-		progress.ShowSpeed = true
-		progress.ShowPercent = true
-		progress.ShowTimeLeft = true
-		progress.SetUnits(pb.U_BYTES)
+		progress.SetWriter(os.Stderr)
 		progress.Start()
-		dst = io.MultiWriter(dst, progress)
+		dst = io.MultiWriter(dst, os.Stderr)
 	}
 
 	startTime := time.Now()

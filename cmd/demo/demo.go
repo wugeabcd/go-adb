@@ -111,7 +111,7 @@ func PrintDeviceInfo(device *adb.Device) error {
 	fmt.Printf("\tdevPath: %s\n", devPath)
 	fmt.Printf("\tstate: %s\n", state)
 
-	cmdOutput, err := device.RunCommand("pwd")
+	cmdOutput, err := device.RunCommandAsString("pwd")
 	if err != nil {
 		fmt.Println("\terror running command:", err)
 	}

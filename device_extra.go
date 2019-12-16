@@ -110,7 +110,7 @@ var (
 // If package not found, err will be ErrPackageNotExist
 func (c *Device) StatPackage(packageName string) (pi PackageInfo, err error) {
 	pi.Name = packageName
-	out, err := c.RunCommand("dumpsys", "package", packageName)
+	out, err := c.RunCommandAsString("dumpsys", "package", packageName)
 	if err != nil {
 		return
 	}
@@ -140,11 +140,11 @@ func (c *Device) StatPackage(packageName string) (pi PackageInfo, err error) {
 
 // Properties extract info from $ adb shell getprop
 func (c *Device) Properties() (props map[string]string, err error) {
-	propOutput, err := c.RunCommand("getprop")
+	propOutput, err := c.RunCommandAsString("getprop")
 	if err != nil {
 		return nil, err
 	}
-	re := regexp.MustCompile(`\[(.*?)\]:\s*\[(.*?)\]`)
+	re := regexp.MustCompile(`\[(.*?)]:\s*\[(.*?)]`)
 	matches := re.FindAllStringSubmatch(propOutput, -1)
 	props = make(map[string]string)
 	for _, m := range matches {
@@ -163,7 +163,7 @@ and parse out the exit code from output
 */
 func (c *Device) RunCommandWithExitCode(cmd string, args ...string) (string, int, error) {
 	exArgs := append(args, ";", "echo", ":$?")
-	outStr, err := c.RunCommand(cmd, exArgs...)
+	outStr, err := c.RunCommandAsString(cmd, exArgs...)
 	if err != nil {
 		return outStr, 0, err
 	}
@@ -257,7 +257,7 @@ func (c *Device) WriteToFile(path string, rd io.Reader, perms os.FileMode) (writ
 				err = fmt.Errorf("target file %s not created", strconv.Quote(path))
 				return
 			}
-			if finfo != nil && finfo.Size == int32(written) {
+			if finfo.Size == int32(written) {
 				break
 			}
 			time.Sleep(time.Duration(200+rand.Intn(100)) * time.Millisecond)
