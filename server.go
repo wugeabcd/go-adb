@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/jt6562/go-adb/internal/errors"
-	"github.com/jt6562/go-adb/wire"
+	"github.com/kvnxiao/go-adb/internal/errors"
+	"github.com/kvnxiao/go-adb/wire"
 )
 
 const (

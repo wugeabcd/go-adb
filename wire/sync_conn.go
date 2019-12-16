@@ -1,6 +1,6 @@
 package wire
 
-import "github.com/jt6562/go-adb/internal/errors"
+import "github.com/kvnxiao/go-adb/internal/errors"
 
 const (
 	// Chunks cannot be longer than 64k.

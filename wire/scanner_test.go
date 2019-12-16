@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/jt6562/go-adb/internal/errors"
+	"github.com/kvnxiao/go-adb/internal/errors"
 	"github.com/stretchr/testify/assert"
 )
 
