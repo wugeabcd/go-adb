@@ -1,6 +1,7 @@
 package adb
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -204,7 +205,9 @@ This method quotes the arguments for you, and will return an error if any of the
 contain double quotes.
 
 Because the adb shell converts all "\n" into "\r\n",
-so here we convert it back (maybe not good for binary output)
+so here we convert it back (maybe not good for binary output).
+
+This function explicitly returns the result as a string, rather than a byte slice (from RunCommand)
 */
 func (c *Device) RunCommandAsString(cmd string, args ...string) (string, error) {
 	conn, err := c.OpenCommand(cmd, args...)
@@ -217,6 +220,38 @@ func (c *Device) RunCommandAsString(cmd string, args ...string) (string, error) 
 	}
 	outStr := strings.ReplaceAll(string(resp), "\r\n", "\n")
 	return outStr, nil
+}
+
+/*
+RunCommand runs the specified commands on a shell on the device.
+
+From the Android docs:
+	Run 'command arg1 arg2 ...' in a shell on the device, and return
+	its output and error streams. Note that arguments must be separated
+	by spaces. If an argument contains a space, it must be quoted with
+	double-quotes. Arguments cannot contain double quotes or things
+	will go very wrong.
+
+	Note that this is the non-interactive version of "adb shell"
+Source: https://android.googlesource.com/platform/system/core/+/master/adb/SERVICES.TXT
+
+This method quotes the arguments for you, and will return an error if any of them
+contain double quotes.
+
+Because the adb shell converts all "\n" into "\r\n",
+so here we convert it back (maybe not good for binary output).
+*/
+func (c *Device) RunCommand(cmd string, args ...string) ([]byte, error) {
+	conn, err := c.OpenCommand(cmd, args...)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := conn.ReadUntilEof()
+	if err != nil {
+		return nil, wrapClientError(err, c, "RunCommandAsString")
+	}
+	outBytes := bytes.ReplaceAll(resp, []byte("\r\n"), []byte("\n"))
+	return outBytes, nil
 }
 
 func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
