@@ -176,7 +176,6 @@ func (c *Device) RunCommandWithExitCode(cmd string, args ...string) (string, int
 		commandLine, _ := prepareCommandLine(cmd, args...)
 		err = ShellExitError{commandLine, exitCode}
 	}
-	outStr = strings.Replace(outStr[0:idx], "\r\n", "\n", -1) // put somewhere else
 	return outStr, exitCode, err
 }
 

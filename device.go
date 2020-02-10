@@ -1,7 +1,6 @@
 package adb
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -204,9 +203,6 @@ Source: https://android.googlesource.com/platform/system/core/+/master/adb/SERVI
 This method quotes the arguments for you, and will return an error if any of them
 contain double quotes.
 
-Because the adb shell converts all "\n" into "\r\n",
-so here we convert it back (maybe not good for binary output).
-
 This function explicitly returns the result as a string, rather than a byte slice (from RunCommand)
 */
 func (c *Device) RunCommandAsString(cmd string, args ...string) (string, error) {
@@ -218,8 +214,7 @@ func (c *Device) RunCommandAsString(cmd string, args ...string) (string, error) 
 	if err != nil {
 		return "", wrapClientError(err, c, "RunCommandAsString")
 	}
-	outStr := strings.ReplaceAll(string(resp), "\r\n", "\n")
-	return outStr, nil
+	return string(resp), nil
 }
 
 /*
@@ -237,9 +232,6 @@ Source: https://android.googlesource.com/platform/system/core/+/master/adb/SERVI
 
 This method quotes the arguments for you, and will return an error if any of them
 contain double quotes.
-
-Because the adb shell converts all "\n" into "\r\n",
-so here we convert it back (maybe not good for binary output).
 */
 func (c *Device) RunCommand(cmd string, args ...string) ([]byte, error) {
 	conn, err := c.OpenCommand(cmd, args...)
@@ -250,8 +242,7 @@ func (c *Device) RunCommand(cmd string, args ...string) ([]byte, error) {
 	if err != nil {
 		return nil, wrapClientError(err, c, "RunCommandAsString")
 	}
-	outBytes := bytes.ReplaceAll(resp, []byte("\r\n"), []byte("\n"))
-	return outBytes, nil
+	return resp, nil
 }
 
 func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err error) {
@@ -269,7 +260,7 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 		}
 	}()
 
-	req := fmt.Sprintf("shell:%s", cmd)
+	req := "exec:" + cmd
 
 	// Shell responses are special, they don't include a length header.
 	// We read until the stream is closed.
