@@ -240,7 +240,7 @@ func (c *Device) RunCommand(cmd string, args ...string) ([]byte, error) {
 	}
 	resp, err := conn.ReadUntilEof()
 	if err != nil {
-		return nil, wrapClientError(err, c, "RunCommandAsString")
+		return nil, wrapClientError(err, c, "RunCommand")
 	}
 	return resp, nil
 }
@@ -276,7 +276,7 @@ func (c *Device) OpenCommand(cmd string, args ...string) (conn *wire.Conn, err e
 
 /*
 Remount, from the official adb command’s docs:
-	Ask adbd to remount the device's filesystem in read-write mode,
+	Ask adb to remount the device's filesystem in read-write mode,
 	instead of read-only. This is usually necessary before performing
 	an "adb sync" or "adb push" request.
 	This request may not succeed on certain builds which do not allow
